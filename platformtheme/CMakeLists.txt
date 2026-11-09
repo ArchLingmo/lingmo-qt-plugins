@@ -7,6 +7,8 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Widgets QuickControls2 DBus Gui)
 find_package(Qt6GuiPrivate REQUIRED)
+find_package(Qt6 REQUIRED COMPONENTS WaylandClient)
+find_package(Qt6WaylandClientPrivate REQUIRED)
 find_package(KF6WindowSystem REQUIRED)
 find_package(PkgConfig REQUIRED)
 
@@ -36,6 +38,8 @@ set (SRCS
     dbusmenu/qdbusplatformmenu.cpp
     x11integration.h
     x11integration.cpp
+    waylandoutputorder.h
+    waylandoutputorder.cpp
     statusnotifier/dbustypes.h
     statusnotifier/dbustypes.cpp
     statusnotifier/statusnotifieritem.h
@@ -52,6 +56,16 @@ qt6_add_dbus_adaptor(SRCS
 
 add_library(lingmoplatformtheme MODULE ${SRCS})
 
+# kde_output_order_v1 (the primary screen on Wayland): from plasma-wayland-protocols
+# when installed, else the copy in protocols/
+find_package(PlasmaWaylandProtocols QUIET)
+if (PlasmaWaylandProtocols_FOUND)
+    set(OUTPUT_ORDER_XML "${PLASMA_WAYLAND_PROTOCOLS_DIR}/kde-output-order-v1.xml")
+else()
+    set(OUTPUT_ORDER_XML "${CMAKE_CURRENT_SOURCE_DIR}/protocols/kde-output-order-v1.xml")
+endif()
+qt6_generate_wayland_protocol_client_sources(lingmoplatformtheme PRIVATE_CODE FILES "${OUTPUT_ORDER_XML}")
+
 target_compile_definitions(lingmoplatformtheme
     PRIVATE
         "QT_NO_FOREACH"
@@ -62,6 +76,8 @@ target_include_directories(lingmoplatformtheme PRIVATE ${XCB_EWMH_INCLUDE_DIRS})
 
 target_link_libraries(lingmoplatformtheme PRIVATE
     Qt6::GuiPrivate
+    Qt6::WaylandClient
+    Qt6::WaylandClientPrivate
     Qt6::Widgets
     Qt6::QuickControls2
     Qt6::Core

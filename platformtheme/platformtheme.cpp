@@ -1,5 +1,6 @@
 #include "platformtheme.h"
 #include "x11integration.h"
+#include "waylandoutputorder.h"
 #include "qdbusmenubar_p.h"
 
 #include <QApplication>
@@ -66,6 +67,9 @@ PlatformTheme::PlatformTheme()
     if (KWindowSystem::isPlatformX11()) {
         m_x11Integration.reset(new X11Integration());
         m_x11Integration->init();
+    } else {
+        // Wayland: the primary screen follows KWin's output order (no-op elsewhere)
+        m_outputOrder = WaylandOutputOrder::create(this);
     }
 
     connect(m_hints, &HintsSettings::systemFontChanged, this, &PlatformTheme::onFontChanged);

@@ -11,6 +11,7 @@
 class QIconEngine;
 class QWindow;
 class X11Integration;
+class WaylandOutputOrder;
 
 class PlatformTheme : public QObject, public QPlatformTheme
 {
@@ -44,6 +45,7 @@ private:
 private:
     HintsSettings *m_hints;
     QScopedPointer<X11Integration> m_x11Integration;
+    WaylandOutputOrder *m_outputOrder = nullptr;
 };
 
 #endif // PLATFORMTHEME_H
