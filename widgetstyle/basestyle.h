@@ -108,6 +108,10 @@ protected:
 
     BaseStylePrivate* d;
 
+private Q_SLOTS:
+    // com.lingmo.Theme accentColorChanged (D-Bus)
+    void onAccentColorChanged();
+
 private:
     ShadowHelper *m_shadowHelper;
     BlurHelper *m_blurHelper;

@@ -75,7 +75,10 @@ QColor m_pinkColor = QColor(202, 100, 172); // #CA64AC
 QColor m_orangeColor = QColor(254, 160, 66); // #FEA042
 QColor m_greyColor = QColor(79, 89, 107); // #4F596B
 
-QColor baseColor;
+// The accent colour. Blue until the setting is read: a default-constructed (invalid)
+// QColor paints black, and the portal's file dialog starts before the settings
+// daemon, so its checked buttons, default button and focused fields came out black.
+QColor baseColor = m_blueColor;
 
 void setBaseColorFromAccentColor(int accentColorID) {
     switch (accentColorID) {
@@ -107,7 +110,7 @@ void setBaseColorFromAccentColor(int accentColorID) {
 }
 
 // 处理 accentColor 变化的槽函数
-void onAccentColorChanged() {
+static void applyAccentColorChange() {
     QDBusInterface iface("com.lingmo.Settings",
                          "/Theme",
                          "com.lingmo.Theme",
@@ -134,15 +137,26 @@ void initializeBaseColor(QObject *context) {
     if (iface.isValid()) {
         int accentColorID = iface.property("accentColor").toInt();
         setBaseColorFromAccentColor(accentColorID);
-
-        // 连接 accentColorChanged 信号到槽函数
-        QDBusConnection::sessionBus().connect("com.lingmo.Settings",
-                                              "/Theme",
-                                              "com.lingmo.Theme",
-                                              "accentColorChanged",
-                                              context,
-                                              SLOT(onAccentColorChanged()));
+    } else {
+        // The settings daemon isn't up yet (programs started with the session, like
+        // the portal's file dialog): the saved setting it would hand out
+        QSettings theme(QStringLiteral("lingmoos"), QStringLiteral("theme"));
+        setBaseColorFromAccentColor(theme.value(QStringLiteral("AccentColor"), 0).toInt());
     }
+
+    // Subscribed whether or not the daemon runs yet: the bus delivers the signal once
+    // it does. The receiver needs a real slot (BaseStyle::onAccentColorChanged).
+    QDBusConnection::sessionBus().connect("com.lingmo.Settings",
+                                          "/Theme",
+                                          "com.lingmo.Theme",
+                                          "accentColorChanged",
+                                          context,
+                                          SLOT(onAccentColorChanged()));
+}
+
+void BaseStyle::onAccentColorChanged()
+{
+    applyAccentColorChange();
 }
 
 static QObject *hintsSettings()
